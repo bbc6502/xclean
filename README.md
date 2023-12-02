@@ -10,7 +10,7 @@ File de-duplication utility
 
 ### Using github
 
-    
+    pip install https://github.com/bbc6502/xclean/archive/refs/heads/main.zip
 
 ## Usage
 
