@@ -214,7 +214,7 @@ class Scanner:
                             if file_name == main_file_name:
                                 continue  # ignore if the scanned file is the main file
                         main_file_path = os.path.join(main_dir_path, main_file_name)
-                        if self._files_are_the_same(target_file_path, main_file_path, check_xmp=check_xmp):
+                        if self._files_are_the_same(target_file_path, main_file_path, check_xmp=check_xmp, check_aae=check_aae):
                             dups_count += 1
                             print()
                             print(f'  Main {main_file_path}')
@@ -222,34 +222,28 @@ class Scanner:
                             print(f'       {dups_count:,} : (size {file_size:,})')
                             if archive_to is not None:
                                 self._archive_file(target_file_path, dir_path, archive_to)
-                                if check_xmp is True:
-                                    xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                    if xmp_file_path is not None:
-                                        self._archive_file(xmp_file_path, dir_path, archive_to)
-                                if check_aae is True:
-                                    aae_file_path = Scanner._find_aae_file(target_file_path)
-                                    if aae_file_path is not None:
-                                        self._archive_file(aae_file_path, dir_path, archive_to)
+                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
+                                if xmp_file_path is not None:
+                                    self._archive_file(xmp_file_path, dir_path, archive_to)
+                                aae_file_path = Scanner._find_aae_file(target_file_path)
+                                if aae_file_path is not None:
+                                    self._archive_file(aae_file_path, dir_path, archive_to)
                             elif trash_dups is True:
                                 self._trash_file(target_file_path)
-                                if check_xmp is True:
-                                    xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                    if xmp_file_path is not None:
-                                        self._trash_file(xmp_file_path)
-                                if check_aae is True:
-                                    aae_file_path = Scanner._find_aae_file(target_file_path)
-                                    if aae_file_path is not None:
-                                        self._trash_file(aae_file_path)
+                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
+                                if xmp_file_path is not None:
+                                    self._trash_file(xmp_file_path)
+                                aae_file_path = Scanner._find_aae_file(target_file_path)
+                                if aae_file_path is not None:
+                                    self._trash_file(aae_file_path)
                             elif remove_dups is True:
                                 self._remove_file(target_file_path)
-                                if check_xmp is True:
-                                    xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                    if xmp_file_path is not None:
-                                        self._remove_file(xmp_file_path)
-                                if check_aae is True:
-                                    aae_file_path = Scanner._find_aae_file(target_file_path)
-                                    if aae_file_path is not None:
-                                        self._remove_file(aae_file_path)
+                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
+                                if xmp_file_path is not None:
+                                    self._remove_file(xmp_file_path)
+                                aae_file_path = Scanner._find_aae_file(target_file_path)
+                                if aae_file_path is not None:
+                                    self._remove_file(aae_file_path)
                             else:
                                 rollback = True
                             if dir_id is not None:
@@ -259,26 +253,24 @@ class Scanner:
                                     'AND file_name = ?',
                                     (dir_id, file_name)
                                 )
-                                if check_xmp:
-                                    xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                    if xmp_file_path is not None:
-                                        xmp_file_name = os.path.basename(xmp_file_path)
-                                        self._cur.execute(
-                                            'DELETE FROM FileInfo '
-                                            'WHERE dir_id = ? '
-                                            'AND file_name = ?',
-                                            (dir_id, xmp_file_name)
-                                        )
-                                if check_aae:
-                                    aae_file_path = Scanner._find_aae_file(target_file_path)
-                                    if aae_file_path is not None:
-                                        aae_file_name = os.path.basename(aae_file_path)
-                                        self._cur.execute(
-                                            'DELETE FROM FileInfo '
-                                            'WHERE dir_id = ? '
-                                            'AND file_name = ?',
-                                            (dir_id, aae_file_name)
-                                        )
+                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
+                                if xmp_file_path is not None:
+                                    xmp_file_name = os.path.basename(xmp_file_path)
+                                    self._cur.execute(
+                                        'DELETE FROM FileInfo '
+                                        'WHERE dir_id = ? '
+                                        'AND file_name = ?',
+                                        (dir_id, xmp_file_name)
+                                    )
+                                aae_file_path = Scanner._find_aae_file(target_file_path)
+                                if aae_file_path is not None:
+                                    aae_file_name = os.path.basename(aae_file_path)
+                                    self._cur.execute(
+                                        'DELETE FROM FileInfo '
+                                        'WHERE dir_id = ? '
+                                        'AND file_name = ?',
+                                        (dir_id, aae_file_name)
+                                    )
                             dups_size += file_size
                             break
         print()
@@ -342,7 +334,7 @@ class Scanner:
                 os.remove(target_file_path)
 
     @staticmethod
-    def _files_are_the_same(source_file_path: str, target_file_path: str, check_xmp=False) -> bool:
+    def _files_are_the_same(source_file_path: str, target_file_path: str, check_xmp=False, check_aae=False) -> bool:
         source_fp = os.open(source_file_path, os.O_RDONLY)
         target_fp = os.open(target_file_path, os.O_RDONLY)
         source_bytes = os.read(source_fp, 1000)
@@ -355,7 +347,11 @@ class Scanner:
         if source_bytes != target_bytes:
             return False
         if check_xmp is True:
-            return Scanner._compare_xmp(source_file_path, target_file_path)
+            if not Scanner._compare_xmp(source_file_path, target_file_path):
+                return False
+        if check_aae is True:
+            if not Scanner._compare_aae(source_file_path, target_file_path):
+                return False
         return True
 
     @staticmethod
@@ -369,6 +365,18 @@ class Scanner:
         if xmp_target_file_path is None:
             return False
         return Scanner._files_are_the_same(xmp_source_file_path, xmp_target_file_path)
+
+    @staticmethod
+    def _compare_aae(source_file_path: str, target_file_path: str) -> bool:
+        aae_source_file_path = Scanner._find_aae_file(source_file_path)
+        aae_target_file_path = Scanner._find_aae_file(target_file_path)
+        if aae_source_file_path is None:
+            if aae_target_file_path is None:
+                return True
+            return False
+        if aae_target_file_path is None:
+            return False
+        return Scanner._files_are_the_same(aae_source_file_path, aae_target_file_path)
 
     @staticmethod
     def _find_xmp_file(file_path: str) -> Optional[str]:
