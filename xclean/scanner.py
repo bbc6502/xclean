@@ -156,6 +156,7 @@ class Scanner:
             remove_dups=False,
             trash_dups=False,
             check_xmp=False,
+            check_aae=False,
             archive_to=None,
             unprotect=False,
     ):
@@ -166,6 +167,7 @@ class Scanner:
         :param remove_dups: If true then remove the duplicate files
         :param trash_dups: If true then send duplicates to the trash
         :param check_xmp: If true then check the xmp matches as well
+        :param check_aae: If true then check the aae matches as well
         :param archive_to: Path to archive duplicate files to
         """
         dir_path = os.path.realpath(dir_path)
@@ -224,18 +226,30 @@ class Scanner:
                                     xmp_file_path = Scanner._find_xmp_file(target_file_path)
                                     if xmp_file_path is not None:
                                         self._archive_file(xmp_file_path, dir_path, archive_to)
+                                if check_aae is True:
+                                    aae_file_path = Scanner._find_aae_file(target_file_path)
+                                    if aae_file_path is not None:
+                                        self._archive_file(aae_file_path, dir_path, archive_to)
                             elif trash_dups is True:
                                 self._trash_file(target_file_path)
                                 if check_xmp is True:
                                     xmp_file_path = Scanner._find_xmp_file(target_file_path)
                                     if xmp_file_path is not None:
                                         self._trash_file(xmp_file_path)
+                                if check_aae is True:
+                                    aae_file_path = Scanner._find_aae_file(target_file_path)
+                                    if aae_file_path is not None:
+                                        self._trash_file(aae_file_path)
                             elif remove_dups is True:
                                 self._remove_file(target_file_path)
                                 if check_xmp is True:
                                     xmp_file_path = Scanner._find_xmp_file(target_file_path)
                                     if xmp_file_path is not None:
                                         self._remove_file(xmp_file_path)
+                                if check_aae is True:
+                                    aae_file_path = Scanner._find_aae_file(target_file_path)
+                                    if aae_file_path is not None:
+                                        self._remove_file(aae_file_path)
                             else:
                                 rollback = True
                             if dir_id is not None:
@@ -254,6 +268,16 @@ class Scanner:
                                             'WHERE dir_id = ? '
                                             'AND file_name = ?',
                                             (dir_id, xmp_file_name)
+                                        )
+                                if check_aae:
+                                    aae_file_path = Scanner._find_aae_file(target_file_path)
+                                    if aae_file_path is not None:
+                                        aae_file_name = os.path.basename(aae_file_path)
+                                        self._cur.execute(
+                                            'DELETE FROM FileInfo '
+                                            'WHERE dir_id = ? '
+                                            'AND file_name = ?',
+                                            (dir_id, aae_file_name)
                                         )
                             dups_size += file_size
                             break
@@ -361,4 +385,21 @@ class Scanner:
         xmp_file_path = f'{prefix}.XMP'
         if os.path.exists(xmp_file_path):
             return xmp_file_path
+        return None
+
+    @staticmethod
+    def _find_aae_file(file_path: str) -> Optional[str]:
+        aae_file_path = f'{file_path}.aae'
+        if os.path.exists(aae_file_path):
+            return aae_file_path
+        aae_file_path = f'{file_path}.AAE'
+        if os.path.exists(aae_file_path):
+            return aae_file_path
+        prefix, extn = os.path.splitext(file_path)
+        aae_file_path = f'{prefix}.aae'
+        if os.path.exists(aae_file_path):
+            return aae_file_path
+        aae_file_path = f'{prefix}.AAE'
+        if os.path.exists(aae_file_path):
+            return aae_file_path
         return None

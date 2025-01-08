@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--trash', default=False, action='store_true', help='Trash duplicate files')
     parser.add_argument('--clean', default=False, action='store_true', help='Clean database')
     parser.add_argument('--xmp', default=False, action='store_true', help='Include xmp files when checking for duplicates')
+    parser.add_argument('--aae', default=False, action='store_true', help='Include aae files when checking for duplicates')
     args = parser.parse_args()
     home_dir = os.environ.get('HOME')
     if home_dir is None:
@@ -36,6 +37,7 @@ def main():
             remove_dups=args.remove,
             trash_dups=args.trash,
             check_xmp=args.xmp,
+            check_aae=args.aae,
             archive_to=args.archive_to,
             unprotect=args.unprotect,
         )
