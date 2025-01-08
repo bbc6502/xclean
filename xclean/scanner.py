@@ -280,13 +280,16 @@ class Scanner:
         print(f'  Remove duplicate file {target_file_path}')
         os.remove(target_file_path)
 
-    def _trash_file(self, target_file_path):
+    def _trash_file(self, target_file_path: str):
         trash_files_path = self.trash_directory()
         if trash_files_path is not None:
             file_name = os.path.basename(target_file_path)
             trash_file_path = os.path.join(trash_files_path, file_name)
             print(f'  Trash duplicate file {target_file_path}')
-            shutil.move(target_file_path, trash_file_path)
+            shutil.copy2(target_file_path, trash_file_path)
+            if os.path.exists(trash_file_path):
+                if os.stat(trash_file_path).st_size == os.stat(target_file_path).st_size:
+                    os.remove(target_file_path)
 
     @staticmethod
     def trash_directory():
@@ -300,7 +303,7 @@ class Scanner:
         return None
 
     @staticmethod
-    def _archive_file(target_file_path, dir_path, archive_to):
+    def _archive_file(target_file_path: str, dir_path: str, archive_to: str):
         target_file_suffix = target_file_path[len(dir_path):]
         while target_file_suffix.startswith('/'):
             target_file_suffix = target_file_suffix[1:]
@@ -309,7 +312,10 @@ class Scanner:
         if not os.path.exists(archive_dir_path):
             os.makedirs(archive_dir_path, mode=0o700, exist_ok=False)
         print(f'  Archive duplicate file to {archive_file_path}')
-        os.rename(target_file_path, archive_file_path)
+        shutil.copy2(target_file_path, archive_file_path)
+        if os.path.exists(archive_file_path):
+            if os.stat(archive_file_path).st_size == os.stat(target_file_path).st_size:
+                os.remove(target_file_path)
 
     @staticmethod
     def _files_are_the_same(source_file_path: str, target_file_path: str, check_xmp=False) -> bool:
