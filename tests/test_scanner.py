@@ -235,7 +235,7 @@ class TestCase:
         assert len(os.listdir(master_dir_path)) == 2
 
     def test_scan_master_with_extension(self, scanner, master_dir_path, m_file1, m_file4):
-        results = scanner.scan(dir_path=str(master_dir_path), extensions=['txt'])
+        results = scanner.scan(dir_path=str(master_dir_path), include=['txt'])
         assert results == {
             'files': {
                 'count': 1,
@@ -245,7 +245,7 @@ class TestCase:
         assert len(os.listdir(master_dir_path)) == 2
 
     def test_scan_master_ignore_link(self, scanner, master_dir_path, m_file1, m_file1_link):
-        results = scanner.scan(dir_path=str(master_dir_path), extensions=['txt'])
+        results = scanner.scan(dir_path=str(master_dir_path), include=['txt'])
         assert results == {
             'files': {
                 'count': 1,
@@ -255,7 +255,7 @@ class TestCase:
         assert len(os.listdir(master_dir_path)) == 2
 
     def test_scan_master_no_match(self, scanner, master_dir_path, m_file3, m_file4):
-        results = scanner.scan(dir_path=str(master_dir_path), extensions=['txt'])
+        results = scanner.scan(dir_path=str(master_dir_path), include=['txt'])
         assert results == {
             'files': {
                 'count': 0,
@@ -265,7 +265,7 @@ class TestCase:
         assert len(os.listdir(master_dir_path)) == 2
 
     def test_scan_master_no_file_extension(self, scanner, master_dir_path, m_file5):
-        results = scanner.scan(dir_path=str(master_dir_path), extensions=['txt'])
+        results = scanner.scan(dir_path=str(master_dir_path), include=['txt'])
         assert results == {
             'files': {
                 'count': 0,
@@ -292,7 +292,7 @@ class TestCase:
 
     def test_xclean_extension(self, scanner, master_dir_path, duplicate_dir_path, m_file1, m_file2, d_file1, d_file4):
         scanner.scan(dir_path=str(master_dir_path))
-        results = scanner.clean(dir_path=str(duplicate_dir_path), extensions=['txt'])
+        results = scanner.clean(dir_path=str(duplicate_dir_path), include=['txt'])
         assert results == {
             'duplicates': {
                 'count': 1,
@@ -322,7 +322,7 @@ class TestCase:
         assert len(os.listdir(duplicate_dir_path)) == 2
 
     def test_xclean_no_match(self, scanner, master_dir_path, duplicate_dir_path, m_file1, m_file2, d_file3, d_file4):
-        results = scanner.clean(dir_path=str(duplicate_dir_path), extensions=['txt'])
+        results = scanner.clean(dir_path=str(duplicate_dir_path), include=['txt'])
         assert results == {
             'duplicates': {
                 'count': 0,
@@ -507,112 +507,112 @@ class TestCase:
 
     def test_xmp_compare_xmp1_xmp1(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp1, d_file1, d_file1_xmp1):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp2_xmp1(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp2, d_file1, d_file1_xmp1):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp3_xmp1(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp3, d_file1, d_file1_xmp1):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp4_xmp1(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp4, d_file1, d_file1_xmp1):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp1_xmp2(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp1, d_file1, d_file1_xmp2):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp2_xmp2(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp2, d_file1, d_file1_xmp2):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp3_xmp2(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp3, d_file1, d_file1_xmp2):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp4_xmp2(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp4, d_file1, d_file1_xmp2):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp1_xmp3(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp1, d_file1, d_file1_xmp3):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp2_xmp3(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp2, d_file1, d_file1_xmp3):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp3_xmp3(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp3, d_file1, d_file1_xmp3):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp4_xmp3(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp4, d_file1, d_file1_xmp3):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp1_xmp4(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp1, d_file1, d_file1_xmp4):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp2_xmp4(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp2, d_file1, d_file1_xmp4):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp3_xmp4(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp3, d_file1, d_file1_xmp4):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
 
     def test_xmp_compare_xmp4_xmp4(self, scanner, master_dir_path, duplicate_dir_path, archive_dir_path, m_file1, m_file1_xmp4, d_file1, d_file1_xmp4):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, extensions=['txt'])
+        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True, include=['txt'])
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 0
         assert len(os.listdir(os.path.join(archive_dir_path, 'subdir'))) == 2
