@@ -162,6 +162,9 @@ class Scanner:
             archive_to: Optional[str]=None,
             archive_new: Optional[str]=None,
             unprotect=False,
+            new=False,
+            dup=False,
+            summary=False,
     ):
         """
         Scan directory and subdirectories for duplicate files
@@ -174,6 +177,10 @@ class Scanner:
         :param check_aae: If true then check the aae matches as well
         :param archive_to: Path to archive duplicate files to
         :param archive_new: Path to archive new files to
+        :param unprotect: If true then unprotect main files
+        :param new: If true then report new files
+        :param dup: If true then report duplicate files
+        :param summary: If true then report summary of changes
         """
         dir_path = os.path.realpath(dir_path)
         print(f'Scan {dir_path} for duplicates')
@@ -244,6 +251,7 @@ class Scanner:
                                 archive_to=archive_to,
                                 trash_dups=trash_dups,
                                 remove_dups=remove_dups,
+                                dup=dup,
                             ):
                                 abort = True
                                 break
@@ -257,6 +265,9 @@ class Scanner:
                             target_file_path=target_file_path,
                             dir_path=dir_path,
                             archive_new=archive_new,
+                            new_count=new_count,
+                            file_size=file_size,
+                            new=new,
                         ):
                             abort = True
                             break
@@ -264,10 +275,11 @@ class Scanner:
                 if root_dir != dir_path:
                     if len(os.listdir(root_dir)) == 0:
                         os.rmdir(root_dir)
-        print()
-        print(f'{dups_count:,} of {files_count:,} duplicate files occupying {dups_size:,} bytes')
-        print(f'{new_count:,} of {files_count:,} new files occupying {new_size:,} bytes')
-        print()
+        if summary:
+            print()
+            print(f'{dups_count:,} of {files_count:,} duplicate files occupying {dups_size:,} bytes')
+            print(f'{new_count:,} of {files_count:,} new files occupying {new_size:,} bytes')
+            print()
         if rollback:
             self._con.rollback()
         else:
@@ -291,7 +303,13 @@ class Scanner:
     def _handle_new_file(
             self, *,
             target_file_path, dir_path, archive_new,
+            new_count, file_size,
+            new=False,
     ) -> bool:
+        if new:
+            print()
+            print(f'  New  {target_file_path}')
+            print(f'       {new_count:,} : (size {file_size:,})')
         if archive_new is not None:
             if not self._archive_file(target_file_path, dir_path, archive_new, archive_type='new'):
                 return False
@@ -311,11 +329,13 @@ class Scanner:
             main_file_path, target_file_path,
             dups_count, file_size,
             archive_to, trash_dups, remove_dups,
+            dup=False,
     ) -> bool:
-        print()
-        print(f'  Main {main_file_path}')
-        print(f'  Dup  {target_file_path}')
-        print(f'       {dups_count:,} : (size {file_size:,})')
+        if dup:
+            print()
+            print(f'  Main {main_file_path}')
+            print(f'  Dup  {target_file_path}')
+            print(f'       {dups_count:,} : (size {file_size:,})')
         if archive_to is not None:
             if not self._archive_file(target_file_path, dir_path, archive_to):
                 return False

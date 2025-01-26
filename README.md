@@ -56,7 +56,10 @@ To answer a prompt before changing a file specify --prompt
 
 ## Usage
 
-    usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-n ARCHIVE_NEW] [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] [--unprotect] [--remove] [--trash] [--clean] [--prompt]
+    usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-n ARCHIVE_NEW] 
+                  [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] 
+                  [--unprotect] [--remove] [--trash] [--clean] [--prompt]
+                  [--new] [--dup] [--summary]
 
     options:
       -h, --help            show this help message and exit
@@ -78,3 +81,6 @@ To answer a prompt before changing a file specify --prompt
       --clean               Clean database
       --xmp                 Include XMP files in checks for duplicates
       --aae                 Include AAE files in checks for duplicates
+      --new                 Report new files
+      --dup                 Report duplicate files
+      --summary             Report summary of changes

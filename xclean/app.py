@@ -4,7 +4,7 @@ from xclean.scanner import Scanner
 
 
 def main():
-    parser = ArgumentParser(description='File de-duplication utility v0.0.7')
+    parser = ArgumentParser(description='File de-duplication utility v0.0.8')
     parser.add_argument('-m', '--main', help='Directory where main files reside')
     parser.add_argument('-t', '--target', help='Directory where duplicate files may reside')
     parser.add_argument('-a', '--archive-to', help='Archive duplicates to directory')
@@ -18,6 +18,9 @@ def main():
     parser.add_argument('--xmp', default=False, action='store_true', help='Include xmp files when checking for duplicates')
     parser.add_argument('--aae', default=False, action='store_true', help='Include aae files when checking for duplicates')
     parser.add_argument('--prompt', default=False, action='store_true', help='Prompt before making changes')
+    parser.add_argument('--new', default=False, action='store_true', help='Report new files')
+    parser.add_argument('--dup', default=False, action='store_true', help='Report duplicate files')
+    parser.add_argument('--summary', default=False, action='store_true', help='Report summary of changes')
     args = parser.parse_args()
     home_dir = os.environ.get('HOME')
     if home_dir is None:
@@ -43,4 +46,7 @@ def main():
             archive_to=args.archive_to,
             archive_new=args.archive_new,
             unprotect=args.unprotect,
+            new=args.new,
+            dup=args.dup,
+            summary=args.summary,
         )
