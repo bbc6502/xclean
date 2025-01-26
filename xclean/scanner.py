@@ -7,12 +7,14 @@ from typing import Optional, List
 class Scanner:
     """Scan the file system for duplicate files"""
 
-    def __init__(self, *, db_path: str, clean=False):
+    def __init__(self, *, db_path: str, clean=False, prompt=False):
         """
         Scanner for duplicate file detection
         :param db_path: Path to the sqlite3 database file
         :param clean: If true then delete any existing database file before starting
+        :param prompt: If true then prompt for confirmation
         """
+        self.prompt = prompt
         print('xclean: File de-duplication utility')
         print()
         if clean is True:
@@ -157,27 +159,35 @@ class Scanner:
             trash_dups=False,
             check_xmp=False,
             check_aae=False,
-            archive_to=None,
+            archive_to: Optional[str]=None,
+            archive_new: Optional[str]=None,
             unprotect=False,
     ):
         """
         Scan directory and subdirectories for duplicate files
         :param dir_path: Path to directory to start the scan in
-        :param include: Optional filename extensions to scan
+        :param include: Optional filename extensions to include in the scan
+        :param exclude: Optional filename extensions to exclude from the scan
         :param remove_dups: If true then remove the duplicate files
         :param trash_dups: If true then send duplicates to the trash
         :param check_xmp: If true then check the xmp matches as well
         :param check_aae: If true then check the aae matches as well
         :param archive_to: Path to archive duplicate files to
+        :param archive_new: Path to archive new files to
         """
         dir_path = os.path.realpath(dir_path)
         print(f'Scan {dir_path} for duplicates')
         dups_count = 0
         dups_size = 0
+        new_count = 0
+        new_size = 0
         files_count = 0
         files_size = 0
         rollback = False
-        for root_dir, dir_names, file_names in os.walk(dir_path):
+        abort = False
+        for root_dir, dir_names, file_names in os.walk(dir_path, topdown=False):
+            if abort:
+                break
             self._cur.execute(
                 '''SELECT di.id FROM DirInfo di WHERE di.path = ?''',
                 (root_dir,)
@@ -192,8 +202,12 @@ class Scanner:
             eligible_file_names = self._eligible_file_names(root_dir, file_names, include, exclude)
             if len(eligible_file_names) > 0:
                 for file_name in eligible_file_names:
+                    if abort:
+                        break
                     files_count += 1
                     target_file_path = os.path.join(root_dir, file_name)
+                    if not os.path.exists(target_file_path):
+                        continue
                     stat_info = os.stat(target_file_path)
                     file_size = stat_info.st_size
                     files_size += file_size
@@ -207,74 +221,52 @@ class Scanner:
                         (file_size,)
                     )
                     main_files = self._cur.fetchall()
+                    matched_with_main_file = False
                     for row in main_files:
+                        if abort:
+                            break
                         main_dir_path = str(row[0])
                         main_file_name = str(row[1])
                         if root_dir == main_dir_path:
                             if file_name == main_file_name:
+                                matched_with_main_file = True
                                 continue  # ignore if the scanned file is the main file
                         main_file_path = os.path.join(main_dir_path, main_file_name)
                         if self._files_are_the_same(target_file_path, main_file_path, check_xmp=check_xmp, check_aae=check_aae):
+                            matched_with_main_file = True
                             dups_count += 1
-                            print()
-                            print(f'  Main {main_file_path}')
-                            print(f'  Dup  {target_file_path}')
-                            print(f'       {dups_count:,} : (size {file_size:,})')
-                            if archive_to is not None:
-                                self._archive_file(target_file_path, dir_path, archive_to)
-                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                if xmp_file_path is not None:
-                                    self._archive_file(xmp_file_path, dir_path, archive_to)
-                                aae_file_path = Scanner._find_aae_file(target_file_path)
-                                if aae_file_path is not None:
-                                    self._archive_file(aae_file_path, dir_path, archive_to)
-                            elif trash_dups is True:
-                                self._trash_file(target_file_path)
-                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                if xmp_file_path is not None:
-                                    self._trash_file(xmp_file_path)
-                                aae_file_path = Scanner._find_aae_file(target_file_path)
-                                if aae_file_path is not None:
-                                    self._trash_file(aae_file_path)
-                            elif remove_dups is True:
-                                self._remove_file(target_file_path)
-                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                if xmp_file_path is not None:
-                                    self._remove_file(xmp_file_path)
-                                aae_file_path = Scanner._find_aae_file(target_file_path)
-                                if aae_file_path is not None:
-                                    self._remove_file(aae_file_path)
-                            else:
-                                rollback = True
-                            if dir_id is not None:
-                                self._cur.execute(
-                                    'DELETE FROM FileInfo '
-                                    'WHERE dir_id = ? '
-                                    'AND file_name = ?',
-                                    (dir_id, file_name)
-                                )
-                                xmp_file_path = Scanner._find_xmp_file(target_file_path)
-                                if xmp_file_path is not None:
-                                    xmp_file_name = os.path.basename(xmp_file_path)
-                                    self._cur.execute(
-                                        'DELETE FROM FileInfo '
-                                        'WHERE dir_id = ? '
-                                        'AND file_name = ?',
-                                        (dir_id, xmp_file_name)
-                                    )
-                                aae_file_path = Scanner._find_aae_file(target_file_path)
-                                if aae_file_path is not None:
-                                    aae_file_name = os.path.basename(aae_file_path)
-                                    self._cur.execute(
-                                        'DELETE FROM FileInfo '
-                                        'WHERE dir_id = ? '
-                                        'AND file_name = ?',
-                                        (dir_id, aae_file_name)
-                                    )
                             dups_size += file_size
+                            if not self._handle_duplicate_file(
+                                dir_path=dir_path, dir_id=dir_id, file_name=file_name,
+                                main_file_path=main_file_path,
+                                target_file_path=target_file_path,
+                                dups_count=dups_count, file_size=file_size,
+                                archive_to=archive_to,
+                                trash_dups=trash_dups,
+                                remove_dups=remove_dups,
+                            ):
+                                abort = True
+                                break
+                            if archive_to is None and trash_dups is not True and remove_dups is not True:
+                                rollback = True
                             break
+                    if not matched_with_main_file:
+                        new_count += 1
+                        new_size += file_size
+                        if not self._handle_new_file(
+                            target_file_path=target_file_path,
+                            dir_path=dir_path,
+                            archive_new=archive_new,
+                        ):
+                            abort = True
+                            break
+            if archive_new is not None:
+                if root_dir != dir_path:
+                    if len(os.listdir(root_dir)) == 0:
+                        os.rmdir(root_dir)
         print()
         print(f'{dups_count:,} of {files_count:,} duplicate files occupying {dups_size:,} bytes')
+        print(f'{new_count:,} of {files_count:,} new files occupying {new_size:,} bytes')
         print()
         if rollback:
             self._con.rollback()
@@ -289,23 +281,142 @@ class Scanner:
                 'count': files_count,
                 'size': files_size,
             },
+            'new': {
+                'count': new_count,
+                'size': new_size,
+            },
+            'abort': abort
         }
 
-    @staticmethod
-    def _remove_file(target_file_path):
-        print(f'  Remove duplicate file {target_file_path}')
-        os.remove(target_file_path)
+    def _handle_new_file(
+            self, *,
+            target_file_path, dir_path, archive_new,
+    ) -> bool:
+        if archive_new is not None:
+            if not self._archive_file(target_file_path, dir_path, archive_new, archive_type='new'):
+                return False
+            xmp_file_path = Scanner._find_xmp_file(target_file_path)
+            if xmp_file_path is not None:
+                if not self._archive_file(xmp_file_path, dir_path, archive_new, archive_type='new'):
+                    return False
+            aae_file_path = Scanner._find_aae_file(target_file_path)
+            if aae_file_path is not None:
+                if not self._archive_file(aae_file_path, dir_path, archive_new, archive_type='new'):
+                    return False
+        return True
 
-    def _trash_file(self, target_file_path: str):
+    def _handle_duplicate_file(
+            self, *,
+            dir_path, dir_id, file_name,
+            main_file_path, target_file_path,
+            dups_count, file_size,
+            archive_to, trash_dups, remove_dups,
+    ) -> bool:
+        print()
+        print(f'  Main {main_file_path}')
+        print(f'  Dup  {target_file_path}')
+        print(f'       {dups_count:,} : (size {file_size:,})')
+        if archive_to is not None:
+            if not self._archive_file(target_file_path, dir_path, archive_to):
+                return False
+            xmp_file_path = Scanner._find_xmp_file(target_file_path)
+            if xmp_file_path is not None:
+                if not self._archive_file(xmp_file_path, dir_path, archive_to):
+                    return False
+            aae_file_path = Scanner._find_aae_file(target_file_path)
+            if aae_file_path is not None:
+                if not self._archive_file(aae_file_path, dir_path, archive_to):
+                    return False
+        elif trash_dups is True:
+            if not self._trash_file(target_file_path):
+                return False
+            xmp_file_path = Scanner._find_xmp_file(target_file_path)
+            if xmp_file_path is not None:
+                if not self._trash_file(xmp_file_path):
+                    return False
+            aae_file_path = Scanner._find_aae_file(target_file_path)
+            if aae_file_path is not None:
+                if not self._trash_file(aae_file_path):
+                    return False
+        elif remove_dups is True:
+            if not self._remove_file(target_file_path):
+                return False
+            xmp_file_path = Scanner._find_xmp_file(target_file_path)
+            if xmp_file_path is not None:
+                if not self._remove_file(xmp_file_path):
+                    return False
+            aae_file_path = Scanner._find_aae_file(target_file_path)
+            if aae_file_path is not None:
+                if not self._remove_file(aae_file_path):
+                    return False
+        if dir_id is not None:
+            self._cur.execute(
+                'DELETE FROM FileInfo '
+                'WHERE dir_id = ? '
+                'AND file_name = ?',
+                (dir_id, file_name)
+            )
+            xmp_file_path = Scanner._find_xmp_file(target_file_path)
+            if xmp_file_path is not None:
+                xmp_file_name = os.path.basename(xmp_file_path)
+                self._cur.execute(
+                    'DELETE FROM FileInfo '
+                    'WHERE dir_id = ? '
+                    'AND file_name = ?',
+                    (dir_id, xmp_file_name)
+                )
+            aae_file_path = Scanner._find_aae_file(target_file_path)
+            if aae_file_path is not None:
+                aae_file_name = os.path.basename(aae_file_path)
+                self._cur.execute(
+                    'DELETE FROM FileInfo '
+                    'WHERE dir_id = ? '
+                    'AND file_name = ?',
+                    (dir_id, aae_file_name)
+                )
+        return True
+
+    def _remove_file(self, target_file_path) -> bool:
+        print(f'  Remove duplicate file {target_file_path}')
+        if not os.path.exists(target_file_path):
+            print(f'Duplicate file {target_file_path} does not exist')
+            return False
+        if not self._prompted():
+            return False
+        os.remove(target_file_path)
+        if os.path.exists(target_file_path):
+            print(f'Failed to remove {target_file_path}')
+            return False
+        return True
+
+    def _trash_file(self, target_file_path: str) -> bool:
         trash_files_path = self.trash_directory()
-        if trash_files_path is not None:
-            file_name = os.path.basename(target_file_path)
-            trash_file_path = os.path.join(trash_files_path, file_name)
-            print(f'  Trash duplicate file {target_file_path}')
-            shutil.copy2(target_file_path, trash_file_path)
-            if os.path.exists(trash_file_path):
-                if os.stat(trash_file_path).st_size == os.stat(target_file_path).st_size:
-                    os.remove(target_file_path)
+        if trash_files_path is None:
+            print(f'No trash directory found')
+            return False
+        file_name = os.path.basename(target_file_path)
+        trash_file_path = os.path.join(trash_files_path, file_name)
+        print(f'  Trash duplicate file {target_file_path}')
+        if not os.path.exists(target_file_path):
+            print(f'Duplicate file {target_file_path} does not exist')
+            return False
+        if os.path.exists(trash_file_path):
+            print(f'Trash file {trash_file_path} already exists')
+            return False
+        if not self._prompted():
+            return False
+        shutil.copy2(target_file_path, trash_file_path)
+        if not os.path.exists(trash_file_path):
+            print(f'Failed to trash file to {trash_file_path}')
+            return False
+        if os.stat(trash_file_path).st_size != os.stat(target_file_path).st_size:
+            print(f'Failed to properly trash file to {trash_file_path}')
+            return False
+        os.remove(target_file_path)
+        if os.path.exists(target_file_path):
+            print(f'Failed to remove {target_file_path}')
+            return False
+        return True
 
     @staticmethod
     def trash_directory():
@@ -318,20 +429,52 @@ class Scanner:
             return trash_files_path
         return None
 
-    @staticmethod
-    def _archive_file(target_file_path: str, dir_path: str, archive_to: str):
+    def _prompted(self) -> bool:
+        if self.prompt:
+            yesno = input('  Do you want to continue? [y/N] ')
+            if yesno.strip().lower().startswith('y'):
+                return True
+            return False
+        return True
+
+    def _archive_file(
+            self,
+            target_file_path: str,
+            dir_path: str,
+            archive_to: str,
+            archive_type='duplicate',
+    ) -> bool:
         target_file_suffix = target_file_path[len(dir_path):]
         while target_file_suffix.startswith('/'):
             target_file_suffix = target_file_suffix[1:]
         archive_file_path = os.path.join(archive_to, target_file_suffix)
         archive_dir_path = os.path.dirname(archive_file_path)
+        print(f'  Archive {archive_type} file to {archive_file_path}')
+        if not os.path.exists(target_file_path):
+            print(f'Could not find {target_file_path}')
+            return False
+        if os.path.exists(archive_file_path):
+            print(f'Archive file already exists {archive_file_path}')
+            return False
+        if not self._prompted():
+            return False
         if not os.path.exists(archive_dir_path):
             os.makedirs(archive_dir_path, mode=0o700, exist_ok=False)
-        print(f'  Archive duplicate file to {archive_file_path}')
+            if not os.path.exists(archive_dir_path):
+                print(f'Failed to create folder {archive_dir_path}')
+                return False
         shutil.copy2(target_file_path, archive_file_path)
-        if os.path.exists(archive_file_path):
-            if os.stat(archive_file_path).st_size == os.stat(target_file_path).st_size:
-                os.remove(target_file_path)
+        if not os.path.exists(archive_file_path):
+            print(f'Failed to copy {target_file_path} to {archive_file_path}')
+            return False
+        if os.stat(archive_file_path).st_size != os.stat(target_file_path).st_size:
+            print(f'Failed to fully copy {target_file_path} to {archive_file_path}')
+            return False
+        os.remove(target_file_path)
+        if os.path.exists(target_file_path):
+            print(f'Failed to remove {target_file_path}')
+            return False
+        return True
 
     @staticmethod
     def _files_are_the_same(source_file_path: str, target_file_path: str, check_xmp=False, check_aae=False) -> bool:

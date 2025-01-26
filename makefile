@@ -10,7 +10,7 @@ venv:
 	@python3.10 -m venv venv
 
 requirements: venv
-	@venv/bin/python -m pip install --upgrade pip setuptools wheel build pytest coverage pytest-cov twine
+	@venv/bin/python -m pip install pip setuptools wheel build pytest coverage pytest-cov twine
 
 test: requirements
 	@venv/bin/pytest --cov --cov-branch --cov-report term-missing
@@ -29,4 +29,4 @@ upload-prod: build
 	@venv/bin/python -m twine upload dist/*
 
 tag-build:
-	git tag 0.0.6
+	git tag 0.0.7

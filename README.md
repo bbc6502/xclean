@@ -14,7 +14,11 @@ Specify --remove to actually remove the duplicate files.
 
 ## Archiving duplicates
 
-Specify --archive to archive the duplicate files to another location.
+Specify --archive-to to archive the duplicate files to another location.
+
+## Archiving new files
+
+Specify --archive-new to archive any new files to another location.
 
 ## Trashing duplicates
 
@@ -28,9 +32,17 @@ Reset the database content of main files by specifying --clean.
 
 To compare the file and associated XMP file specify the --xmp option as well.
 
+## Compare AAE files as well
+
+To compare the file and associated AAE file specify the --aae option as well.
+
 ## Scanning specific file types
 
 To scan files of specific types use the --include and --exclude options.
+
+## Prompt before changing
+
+To answer a prompt before changing a file specify --prompt
 
 ## Installation
 
@@ -44,7 +56,7 @@ To scan files of specific types use the --include and --exclude options.
 
 ## Usage
 
-    usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] [--unprotect] [--remove] [--trash] [--clean]
+    usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-n ARCHIVE_NEW] [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] [--unprotect] [--remove] [--trash] [--clean] [--prompt]
 
     options:
       -h, --help            show this help message and exit
@@ -54,6 +66,8 @@ To scan files of specific types use the --include and --exclude options.
                             Directory where duplicate files may reside
       -a ARCHIVE_TO, --archive-to ARCHIVE_TO
                             Archive duplicates to folder
+      -n ARCHIVE_NEW, --archive-new ARCHIVE_NEW
+                            Archive new files to folder
       -i [EXTENSIONS ...], --include [EXTENSIONS ...]
                             Include Extensions
       -x [EXTENSIONS ...], --exclude [EXTENSIONS ...]
@@ -62,4 +76,5 @@ To scan files of specific types use the --include and --exclude options.
       --remove              Remove duplicate files
       --trash               Trash duplicate files
       --clean               Clean database
-      --xmp                 Include XMP files as well
+      --xmp                 Include XMP files in checks for duplicates
+      --aae                 Include AAE files in checks for duplicates
