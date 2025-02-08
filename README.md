@@ -59,7 +59,7 @@ To answer a prompt before changing a file specify --prompt
     usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-n ARCHIVE_NEW] 
                   [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] 
                   [--unprotect] [--remove] [--trash] [--clean] [--prompt]
-                  [--new] [--dup] [--summary]
+                  [--new] [--dup] [--summary] [--copy]
 
     options:
       -h, --help            show this help message and exit
@@ -84,3 +84,4 @@ To answer a prompt before changing a file specify --prompt
       --new                 Report new files
       --dup                 Report duplicate files
       --summary             Report summary of changes
+      --copy                Copy files instead of moving
