@@ -4,7 +4,7 @@ from xclean.scanner import Scanner
 
 
 def main():
-    parser = ArgumentParser(description='File de-duplication utility v0.0.9')
+    parser = ArgumentParser(description='File de-duplication utility v0.0.10')
     parser.add_argument('-m', '--main', help='Directory where main files reside')
     parser.add_argument('-t', '--target', help='Directory where duplicate files may reside')
     parser.add_argument('-a', '--archive-to', help='Archive duplicates to directory')
@@ -22,13 +22,20 @@ def main():
     parser.add_argument('--dup', default=False, action='store_true', help='Report duplicate files')
     parser.add_argument('--summary', default=False, action='store_true', help='Report summary of changes')
     parser.add_argument('--copy', default=False, action='store_true', help='Copy files instead of moving')
+    parser.add_argument('--ignore-existing', default=False, action='store_true', help='Ignore existing archive files')
     args = parser.parse_args()
     home_dir = os.environ.get('HOME')
     if home_dir is None:
         db_path = 'xclean.sqlite'
     else:
         db_path = os.path.join(home_dir, 'xclean.sqlite')
-    xclean = Scanner(db_path=db_path, clean=args.clean, prompt=args.prompt)
+    xclean = Scanner(
+        db_path=db_path,
+        clean=args.clean,
+        prompt=args.prompt,
+        copy=args.copy,
+        ignore_existing=args.ignore_existing,
+    )
     if args.main is not None:
         xclean.scan(
             dir_path=args.main,
@@ -46,7 +53,6 @@ def main():
             check_aae=args.aae,
             archive_to=args.archive_to,
             archive_new=args.archive_new,
-            copy=args.copy,
             unprotect=args.unprotect,
             new=args.new,
             dup=args.dup,

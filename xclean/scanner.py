@@ -7,14 +7,25 @@ from typing import Optional, List
 class Scanner:
     """Scan the file system for duplicate files"""
 
-    def __init__(self, *, db_path: str, clean=False, prompt=False):
+    def __init__(
+            self, *,
+            db_path: str,
+            clean=False,
+            prompt=False,
+            copy=False,
+            ignore_existing=False,
+    ):
         """
         Scanner for duplicate file detection
         :param db_path: Path to the sqlite3 database file
         :param clean: If true then delete any existing database file before starting
         :param prompt: If true then prompt for confirmation
+        :param copy: If true then copy files instead of moving them
+        :param ignore_existing: If true then ignore existing archive files
         """
         self.prompt = prompt
+        self.copy = copy
+        self.ignore_existing = ignore_existing
         print('xclean: File de-duplication utility')
         print()
         if clean is True:
@@ -69,7 +80,8 @@ class Scanner:
         """
         Scan directory and subdirectories for main files
         :param dir_path: Path to directory to start the scan in
-        :param include: Optional filename extensions to scan
+        :param include: Optional filename extensions to include in scan
+        :param exclude: Optional filename extensions to exclude from scan
         """
         dir_path = os.path.realpath(dir_path)
         print(f'Scan {dir_path} for main files')
@@ -165,7 +177,6 @@ class Scanner:
             new=False,
             dup=False,
             summary=False,
-            copy=False,
     ):
         """
         Scan directory and subdirectories for duplicate files
@@ -182,7 +193,6 @@ class Scanner:
         :param new: If true then report new files
         :param dup: If true then report duplicate files
         :param summary: If true then report summary of changes
-        :param copy: If true then copy files instead of moving
         """
         dir_path = os.path.realpath(dir_path)
         print(f'Scan {dir_path} for duplicates')
@@ -254,7 +264,6 @@ class Scanner:
                                 trash_dups=trash_dups,
                                 remove_dups=remove_dups,
                                 dup=dup,
-                                copy=copy,
                             ):
                                 abort = True
                                 break
@@ -271,7 +280,6 @@ class Scanner:
                             new_count=new_count,
                             file_size=file_size,
                             new=new,
-                            copy=copy,
                         ):
                             abort = True
                             break
@@ -309,7 +317,6 @@ class Scanner:
             target_file_path, dir_path, archive_new,
             new_count, file_size,
             new=False,
-            copy=False,
     ) -> bool:
         if new:
             print()
@@ -318,21 +325,21 @@ class Scanner:
         if archive_new is not None:
             if not self._archive_file(
                     target_file_path, dir_path, archive_new,
-                    archive_type='new', copy=copy,
+                    archive_type='new',
             ):
                 return False
             xmp_file_path = Scanner._find_xmp_file(target_file_path)
             if xmp_file_path is not None:
                 if not self._archive_file(
                         xmp_file_path, dir_path, archive_new,
-                        archive_type='new', copy=copy,
+                        archive_type='new',
                 ):
                     return False
             aae_file_path = Scanner._find_aae_file(target_file_path)
             if aae_file_path is not None:
                 if not self._archive_file(
                         aae_file_path, dir_path, archive_new,
-                        archive_type='new', copy=copy,
+                        archive_type='new',
                 ):
                     return False
         return True
@@ -344,7 +351,6 @@ class Scanner:
             dups_count, file_size,
             archive_to, trash_dups, remove_dups,
             dup=False,
-            copy=False,
     ) -> bool:
         if dup:
             print()
@@ -354,21 +360,18 @@ class Scanner:
         if archive_to is not None:
             if not self._archive_file(
                     target_file_path, dir_path, archive_to,
-                    copy=copy,
             ):
                 return False
             xmp_file_path = Scanner._find_xmp_file(target_file_path)
             if xmp_file_path is not None:
                 if not self._archive_file(
                         xmp_file_path, dir_path, archive_to,
-                        copy=copy,
                 ):
                     return False
             aae_file_path = Scanner._find_aae_file(target_file_path)
             if aae_file_path is not None:
                 if not self._archive_file(
                         aae_file_path, dir_path, archive_to,
-                        copy=copy,
                 ):
                     return False
         elif trash_dups is True:
@@ -487,7 +490,6 @@ class Scanner:
             dir_path: str,
             archive_to: str,
             archive_type='duplicate',
-            copy=False,
     ) -> bool:
         target_file_suffix = target_file_path[len(dir_path):]
         while target_file_suffix.startswith('/'):
@@ -500,6 +502,9 @@ class Scanner:
             return False
         if os.path.exists(archive_file_path):
             print(f'Archive file already exists {archive_file_path}')
+            if self.ignore_existing:
+                if os.stat(archive_file_path).st_size == os.stat(target_file_path).st_size:
+                    return True
             return False
         if not self._prompted():
             return False
@@ -515,7 +520,8 @@ class Scanner:
         if os.stat(archive_file_path).st_size != os.stat(target_file_path).st_size:
             print(f'Failed to fully copy {target_file_path} to {archive_file_path}')
             return False
-        if not copy:
+        if not self.copy:
+            print(f'  Remove {target_file_path}')
             os.remove(target_file_path)
             if os.path.exists(target_file_path):
                 print(f'Failed to remove {target_file_path}')
@@ -569,34 +575,27 @@ class Scanner:
 
     @staticmethod
     def _find_xmp_file(file_path: str) -> Optional[str]:
-        xmp_file_path = f'{file_path}.xmp'
-        if os.path.exists(xmp_file_path):
-            return xmp_file_path
-        xmp_file_path = f'{file_path}.XMP'
-        if os.path.exists(xmp_file_path):
-            return xmp_file_path
-        prefix, extn = os.path.splitext(file_path)
-        xmp_file_path = f'{prefix}.xmp'
-        if os.path.exists(xmp_file_path):
-            return xmp_file_path
-        xmp_file_path = f'{prefix}.XMP'
-        if os.path.exists(xmp_file_path):
-            return xmp_file_path
-        return None
+        return Scanner._find_file(file_path, 'xmp')
 
     @staticmethod
     def _find_aae_file(file_path: str) -> Optional[str]:
-        aae_file_path = f'{file_path}.aae'
+        return Scanner._find_file(file_path, 'aae')
+
+    @staticmethod
+    def _find_file(file_path: str, extn_lower: str):
+        extn_lower = extn_lower.lower()
+        extn_upper = extn_lower.upper()
+        aae_file_path = f'{file_path}.{extn_lower}'
         if os.path.exists(aae_file_path):
             return aae_file_path
-        aae_file_path = f'{file_path}.AAE'
+        aae_file_path = f'{file_path}.{extn_upper}'
         if os.path.exists(aae_file_path):
             return aae_file_path
         prefix, extn = os.path.splitext(file_path)
-        aae_file_path = f'{prefix}.aae'
+        aae_file_path = f'{prefix}.{extn_lower}'
         if os.path.exists(aae_file_path):
             return aae_file_path
-        aae_file_path = f'{prefix}.AAE'
+        aae_file_path = f'{prefix}.{extn_upper}'
         if os.path.exists(aae_file_path):
             return aae_file_path
         return None

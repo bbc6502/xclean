@@ -48,7 +48,14 @@ class TestCase(Fixtures):
             m_file1, m_file1_xmp3, d_file1
     ):
         scanner.scan(dir_path=master_dir_path)
-        scanner.clean(dir_path=duplicate_dir_path, archive_to=archive_dir_path, check_xmp=True)
+        assert len(os.listdir(master_dir_path)) == 2
+        assert len(os.listdir(os.path.dirname(d_file1))) == 1
+        assert len(os.listdir(archive_dir_path)) == 0
+        scanner.clean(
+            dir_path=duplicate_dir_path,
+            archive_to=archive_dir_path,
+            check_xmp=True
+        )
         assert len(os.listdir(master_dir_path)) == 2
         assert len(os.listdir(os.path.dirname(d_file1))) == 1
         assert len(os.listdir(archive_dir_path)) == 0

@@ -13,6 +13,16 @@ class Fixtures:
         return scanner
 
     @pytest.fixture
+    def scanner_ignore_existing(self):
+        scanner = Scanner(db_path=':memory:', ignore_existing=True)
+        return scanner
+
+    @pytest.fixture
+    def scanner_with_copy(self):
+        scanner = Scanner(db_path=':memory:', copy=True)
+        return scanner
+
+    @pytest.fixture
     def scanner_with_prompt(self):
         scanner = Scanner(db_path=':memory:', prompt=True)
         return scanner
@@ -70,6 +80,13 @@ class Fixtures:
     @pytest.fixture
     def archive_dir_path(self, tmp_path):
         archive_dir_path = os.path.join(tmp_path, 'archive')
+        if not os.path.exists(archive_dir_path):
+            os.mkdir(archive_dir_path)
+        return archive_dir_path
+
+    @pytest.fixture
+    def archive_sub_dir_path(self, archive_dir_path):
+        archive_dir_path = os.path.join(archive_dir_path, 'subdir')
         if not os.path.exists(archive_dir_path):
             os.mkdir(archive_dir_path)
         return archive_dir_path
@@ -174,6 +191,13 @@ class Fixtures:
     @pytest.fixture
     def d_file1(self, duplicate_sub_dir_path, file_name_1):
         d_file1 = os.path.join(duplicate_sub_dir_path, file_name_1)
+        with open(d_file1, 'w') as fp:
+            fp.write('a'*1500)
+        return d_file1
+
+    @pytest.fixture
+    def a_file1(self, archive_sub_dir_path, file_name_1):
+        d_file1 = os.path.join(archive_sub_dir_path, file_name_1)
         with open(d_file1, 'w') as fp:
             fp.write('a'*1500)
         return d_file1
