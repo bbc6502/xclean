@@ -92,15 +92,9 @@ class Scanner:
             if len(eligible_file_names) > 0:
                 dir_id = self._record_main_directory(root_dir)
                 for file_name in eligible_file_names:
-                    file_path = os.path.join(root_dir, file_name)
-                    stat_info = os.stat(file_path)
-                    file_size = stat_info.st_size
                     file_count += 1
+                    file_size = self._record_new_file(dir_id, root_dir, file_name)
                     total_size += file_size
-                    self._cur.execute(
-                        '''INSERT INTO FileInfo (file_size, dir_id, file_name) VALUES (?,?,?)''',
-                        (file_size, dir_id, file_name)
-                    )
             self._con.commit()
         print()
         print(f'{file_count:,} files scanned with {total_size:,} bytes')
@@ -111,6 +105,16 @@ class Scanner:
                 'size': total_size,
             }
         }
+
+    def _record_new_file(self, dir_id, root_dir, file_name):
+        file_path = os.path.join(root_dir, file_name)
+        stat_info = os.stat(file_path)
+        file_size = stat_info.st_size
+        self._cur.execute(
+            '''INSERT INTO FileInfo (file_size, dir_id, file_name) VALUES (?,?,?)''',
+            (file_size, dir_id, file_name)
+        )
+        return file_size
 
     def _record_main_directory(self, root_dir: str) -> int:
         dir_id = self._create_directory_entry(root_dir)
@@ -173,6 +177,7 @@ class Scanner:
             check_aae=False,
             archive_to: Optional[str]=None,
             archive_new: Optional[str]=None,
+            import_new: Optional[str]=None,
             unprotect=False,
             new=False,
             dup=False,
@@ -189,6 +194,7 @@ class Scanner:
         :param check_aae: If true then check the aae matches as well
         :param archive_to: Path to archive duplicate files to
         :param archive_new: Path to archive new files to
+        :param import_new: Path to import new files into
         :param unprotect: If true then unprotect main files
         :param new: If true then report new files
         :param dup: If true then report duplicate files
@@ -277,6 +283,7 @@ class Scanner:
                             target_file_path=target_file_path,
                             dir_path=dir_path,
                             archive_new=archive_new,
+                            import_new=import_new,
                             new_count=new_count,
                             file_size=file_size,
                             new=new,
@@ -314,14 +321,16 @@ class Scanner:
 
     def _handle_new_file(
             self, *,
-            target_file_path, dir_path, archive_new,
+            target_file_path, dir_path, archive_new, import_new,
             new_count, file_size,
             new=False,
     ) -> bool:
+
         if new:
             print()
             print(f'  New  {target_file_path}')
             print(f'       {new_count:,} : (size {file_size:,})')
+
         if archive_new is not None:
             if not self._archive_file(
                     target_file_path, dir_path, archive_new,
@@ -342,6 +351,32 @@ class Scanner:
                         archive_type='new',
                 ):
                     return False
+
+        if import_new is not None:
+
+            for target_file_path in [
+                target_file_path,
+                Scanner._find_xmp_file(target_file_path),
+                Scanner._find_aae_file(target_file_path),
+            ]:
+                if target_file_path is None:
+                    continue
+                if not self._archive_file(
+                        target_file_path, dir_path, import_new,
+                        archive_type='new',
+                ):
+                    return False
+                archive_file_path = self._archive_file_path(target_file_path, dir_path, import_new)
+                import_new_parts = import_new.split('/')
+                archive_file_parts = archive_file_path.split('/')
+                dir_id = None
+                root_dir = None
+                for parts in range(len(import_new_parts), len(archive_file_parts)):
+                    root_dir = '/'.join(archive_file_parts[0:parts])
+                    dir_id = self._create_directory_entry(root_dir)
+                file_name = archive_file_parts[-1]
+                self._record_new_file(dir_id, root_dir, file_name)
+
         return True
 
     def _handle_duplicate_file(
@@ -491,10 +526,7 @@ class Scanner:
             archive_to: str,
             archive_type='duplicate',
     ) -> bool:
-        target_file_suffix = target_file_path[len(dir_path):]
-        while target_file_suffix.startswith('/'):
-            target_file_suffix = target_file_suffix[1:]
-        archive_file_path = os.path.join(archive_to, target_file_suffix)
+        archive_file_path = self._archive_file_path(target_file_path, dir_path, archive_to)
         archive_dir_path = os.path.dirname(archive_file_path)
         print(f'  Archive {archive_type} file to {archive_file_path}')
         if not os.path.exists(target_file_path):
@@ -527,6 +559,13 @@ class Scanner:
                 print(f'Failed to remove {target_file_path}')
                 return False
         return True
+
+    def _archive_file_path(self, target_file_path: str, dir_path: str, archive_to: str) -> str:
+        target_file_suffix = target_file_path[len(dir_path):]
+        while target_file_suffix.startswith('/'):
+            target_file_suffix = target_file_suffix[1:]
+        archive_file_path = os.path.join(archive_to, target_file_suffix)
+        return archive_file_path
 
     @staticmethod
     def _files_are_the_same(source_file_path: str, target_file_path: str, check_xmp=False, check_aae=False) -> bool:

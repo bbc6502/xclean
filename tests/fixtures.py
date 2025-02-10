@@ -64,6 +64,13 @@ class Fixtures:
         return master_dir_path
 
     @pytest.fixture
+    def master_sub_dir_path(self, master_dir_path):
+        sub_dir_path = os.path.join(master_dir_path, 'subdir')
+        if not os.path.exists(sub_dir_path):
+            os.mkdir(sub_dir_path)
+        return sub_dir_path
+
+    @pytest.fixture
     def duplicate_dir_path(self, tmp_path):
         duplicate_dir_path = os.path.join(tmp_path, 'duplicate')
         if not os.path.exists(duplicate_dir_path):

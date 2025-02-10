@@ -29,4 +29,4 @@ upload-prod: build
 	@venv/bin/python -m twine upload dist/*
 
 tag-build:
-	git tag 0.0.10
+	git tag 0.0.11

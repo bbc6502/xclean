@@ -4,11 +4,12 @@ from xclean.scanner import Scanner
 
 
 def main():
-    parser = ArgumentParser(description='File de-duplication utility v0.0.10')
-    parser.add_argument('-m', '--main', help='Directory where main files reside')
-    parser.add_argument('-t', '--target', help='Directory where duplicate files may reside')
-    parser.add_argument('-a', '--archive-to', help='Archive duplicates to directory')
-    parser.add_argument('-n', '--archive-new', help='Archive new files to directory')
+    parser = ArgumentParser(description='File de-duplication utility v0.0.11')
+    parser.add_argument('--main', help='Directory where main files reside')
+    parser.add_argument('--target', help='Directory where duplicate files may reside')
+    parser.add_argument('--archive-to', help='Archive duplicates to directory')
+    parser.add_argument('--archive-new', help='Archive new files to directory')
+    parser.add_argument('--import-new', help='Directory where to import new main files into')
     parser.add_argument('-i', '--include', nargs='*', help='Include Extensions')
     parser.add_argument('-x', '--exclude', nargs='*', help='Exclude Extensions')
     parser.add_argument('--unprotect', default=False, action='store_true', help='Unprotect main files')
@@ -53,6 +54,7 @@ def main():
             check_aae=args.aae,
             archive_to=args.archive_to,
             archive_new=args.archive_new,
+            import_new=args.import_new,
             unprotect=args.unprotect,
             new=args.new,
             dup=args.dup,

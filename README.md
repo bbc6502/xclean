@@ -56,21 +56,26 @@ To answer a prompt before changing a file specify --prompt
 
 ## Usage
 
-    usage: xclean [-h] [-m MAIN] [-t TARGET] [-a ARCHIVE_TO] [-n ARCHIVE_NEW] 
-                  [-i [EXTENSIONS ...]] [-x [EXTENSIONS ...]] 
+    usage: xclean [-h] 
+                  [--main MAIN] 
+                  [--target TARGET] 
+                  [--archive-to ARCHIVE_TO] 
+                  [--archive-new ARCHIVE_NEW] 
+                  [--import-new MAIN]
+                  [-i [EXTENSIONS ...]] 
+                  [-x [EXTENSIONS ...]] 
                   [--unprotect] [--remove] [--trash] [--clean] [--prompt]
                   [--new] [--dup] [--summary] [--copy] [--ignore-existing]
 
     options:
       -h, --help            show this help message and exit
-      -m MAIN, --main MAIN
-                            Directory where master files reside
-      -t TARGET, --target TARGET
-                            Directory where duplicate files may reside
-      -a ARCHIVE_TO, --archive-to ARCHIVE_TO
+      --main MAIN           Directory where master files reside
+      --target TARGET       Directory where duplicate files may reside
+      --archive-to ARCHIVE_TO
                             Archive duplicates to folder
-      -n ARCHIVE_NEW, --archive-new ARCHIVE_NEW
+      --archive-new ARCHIVE_NEW
                             Archive new files to folder
+      --import-new MAIN     Directory where to import new master files
       -i [EXTENSIONS ...], --include [EXTENSIONS ...]
                             Include Extensions
       -x [EXTENSIONS ...], --exclude [EXTENSIONS ...]
@@ -85,4 +90,4 @@ To answer a prompt before changing a file specify --prompt
       --dup                 Report duplicate files
       --summary             Report summary of changes
       --copy                Copy files instead of moving
-      --ignore-existing     Ignore existing archvive files
+      --ignore-existing     Ignore existing archive files
