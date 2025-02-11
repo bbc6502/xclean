@@ -1,6 +1,7 @@
 import os
 import shutil
 import sqlite3
+import sys
 from typing import Optional, List
 
 
@@ -514,9 +515,11 @@ class Scanner:
 
     def _prompted(self) -> bool:
         if self.prompt:
-            yesno = input('  Do you want to continue? [y/N] ')
+            yesno = input('  Do you want to continue? [y/N/q] ')
             if yesno.strip().lower().startswith('y'):
                 return True
+            if yesno.strip().lower().startswith('q'):
+                sys.exit(1)
             return False
         return True
 
