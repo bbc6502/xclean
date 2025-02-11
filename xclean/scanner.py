@@ -376,6 +376,7 @@ class Scanner:
                     dir_id = self._create_directory_entry(root_dir)
                 file_name = archive_file_parts[-1]
                 self._record_new_file(dir_id, root_dir, file_name)
+            self._con.commit()
 
         return True
 

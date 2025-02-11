@@ -4,7 +4,7 @@ from xclean.scanner import Scanner
 
 
 def main():
-    parser = ArgumentParser(description='File de-duplication utility v0.0.11')
+    parser = ArgumentParser(description='File de-duplication utility v0.0.12')
     parser.add_argument('--main', help='Directory where main files reside')
     parser.add_argument('--target', help='Directory where duplicate files may reside')
     parser.add_argument('--archive-to', help='Archive duplicates to directory')
